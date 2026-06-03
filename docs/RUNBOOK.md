@@ -101,7 +101,34 @@ run `pnpm rebuild sharp unrs-resolver` once; they are pre-approved in
 
 ## Common operations
 
-Populated as features land.
+### Ask the QA endpoint (Sprint 1 vertical slice)
+
+`POST /api/v1/qa/ask` runs the versioned `qa.answer` prompt through the
+ai_client chokepoint (budget gate -> provider -> usage metering -> audit). Auth
+required; roles tenant_admin | qa_lead | qa_engineer.
+
+```powershell
+$b = @{user_id="u1"; tenant_id="<tenant-uuid>"; email="qa@example.com"; role="qa_engineer"} | ConvertTo-Json
+$tok = (Invoke-RestMethod http://localhost:8000/api/v1/auth/dev-token -Method POST -Body $b -ContentType "application/json").access_token
+$q = @{question="Which requirements lack acceptance criteria?"; max_tokens=256} | ConvertTo-Json
+Invoke-RestMethod http://localhost:8000/api/v1/qa/ask -Method POST -Body $q -ContentType "application/json" -Headers @{Authorization="Bearer $tok"}
+```
+
+With `AI_PROVIDER=stub` the response has `is_stub: true`. Over-budget returns
+HTTP 402; provider failure returns 502.
+
+### Switching to real OIDC (Auth0)
+
+Set `AUTH_PROVIDER=oidc`, `OIDC_ISSUER`, `OIDC_AUDIENCE`. JWKS URL is derived
+from the issuer if blank. Tokens must carry the configured tenant/role custom
+claims (`OIDC_TENANT_CLAIM`/`OIDC_ROLE_CLAIM`) OR the user must have a DB
+membership the app can resolve by subject/email.
+
+### Switching to real Anthropic
+
+Set `AI_PROVIDER=anthropic` and `ANTHROPIC_API_KEY=sk-ant-...` in `apps/api/.env`
+(gitignored). Never commit a key. Cursor credentials are NOT used for inference
+(see DECISIONS D-0021).
 
 ## Troubleshooting
 

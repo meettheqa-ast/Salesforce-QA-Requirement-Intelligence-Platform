@@ -19,6 +19,7 @@ dependencies = [
     "structlog>=24.4.0",
     "tenacity>=9.0.0",
     "tiktoken>=0.8.0",
+    "anthropic>=0.39.0",
 ]
 
 [dependency-groups]
@@ -161,5 +162,20 @@ source_modules = [
     "app.modules.audit", "app.modules.metering",
 ]
 forbidden_modules = ["app.modules.auth._internal"]
+allow_indirect_imports = "true"
+
+[[tool.importlinter.contracts]]
+name = "qa internals are private"
+type = "forbidden"
+source_modules = [
+    "app.modules.auth", "app.modules.tenants", "app.modules.connections",
+    "app.modules.jira", "app.modules.repositories", "app.modules.rag",
+    "app.modules.salesforce_knowledge", "app.modules.analysis",
+    "app.modules.test_generation", "app.modules.exports",
+    "app.modules.publishing", "app.modules.change_intelligence",
+    "app.modules.traceability", "app.modules.ai_client", "app.modules.jobs",
+    "app.modules.audit", "app.modules.metering",
+]
+forbidden_modules = ["app.modules.qa._internal"]
 allow_indirect_imports = "true"
 

@@ -90,14 +90,24 @@ class Settings(BaseSettings):
     auth_provider: AuthProvider = AuthProvider.DEV
     oidc_issuer: str = ""
     oidc_audience: str = ""
+    # If blank, the JWKS URL is derived from the issuer (issuer/.well-known/...).
     oidc_jwks_url: str = ""
+    # JWKS responses are cached this long to avoid a network hop per request.
+    oidc_jwks_cache_seconds: int = 3600
+    # Claim names carrying tenant + role. Auth0 requires namespaced custom claims;
+    # the defaults match a typical Auth0 custom-claims namespace. When a token
+    # lacks these claims, the app falls back to a DB membership lookup by subject.
+    oidc_tenant_claim: str = "https://sfqa.app/tenant_id"
+    oidc_role_claim: str = "https://sfqa.app/role"
     dev_auth_shared_secret: str = "dev-only-not-for-production"
 
     # AI provider (LLM)
     ai_provider: AIProvider = AIProvider.STUB
     anthropic_api_key: str = ""
-    anthropic_model_primary: str = "claude-opus-4-5"
+    anthropic_model_primary: str = "claude-opus-4-8"
     anthropic_model_cheap: str = "claude-haiku-4-5"
+    # Per-request timeout (seconds) for provider HTTP calls.
+    llm_request_timeout_seconds: float = 60.0
 
     # AI provider (embeddings)
     embeddings_provider: EmbeddingsProvider = EmbeddingsProvider.STUB

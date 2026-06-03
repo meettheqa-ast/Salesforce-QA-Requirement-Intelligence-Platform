@@ -8,8 +8,9 @@ every mutation.
 from __future__ import annotations
 
 import uuid
+from dataclasses import dataclass
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from app.db import system_session
 from app.modules.audit.api import emit
@@ -72,6 +73,50 @@ async def add_member(data: MembershipCreate) -> MembershipOut:
         payload={"tenant_id": str(data.tenant_id), "role": data.role.value},
     )
     return out
+
+
+@dataclass(frozen=True, slots=True)
+class ResolvedIdentity:
+    user_id: uuid.UUID
+    tenant_id: uuid.UUID
+    role: str
+
+
+async def resolve_identity(
+    *, sso_subject: str, email: str
+) -> ResolvedIdentity | None:
+    """Resolve a user + their membership from an IdP subject or email.
+
+    Used as the fallback when an OIDC token does not carry tenant/role custom
+    claims. MVP assumes one active membership per user; if a user belongs to
+    several tenants, the most recently created membership wins (deterministic,
+    documented; multi-tenant user selection is a future concern).
+    """
+    async with system_session() as session:
+        user = (
+            await session.execute(
+                select(User).where(
+                    or_(User.sso_subject == sso_subject, User.email == email)
+                )
+            )
+        ).scalar_one_or_none()
+        if user is None:
+            return None
+        membership = (
+            await session.execute(
+                select(Membership)
+                .where(Membership.user_id == user.id)
+                .order_by(Membership.created_at.desc())
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+        if membership is None:
+            return None
+        return ResolvedIdentity(
+            user_id=user.id,
+            tenant_id=membership.tenant_id,
+            role=membership.role,
+        )
 
 
 async def list_members(tenant_id: uuid.UUID) -> list[MembershipOut]:

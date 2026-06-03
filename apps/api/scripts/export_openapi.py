@@ -16,7 +16,7 @@ from pathlib import Path
 # is run directly, regardless of the caller's working directory.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.main import create_app  # noqa: E402
+from app.main import create_app
 
 
 def main() -> None:

@@ -61,8 +61,9 @@ class AnthropicLLMProvider(BaseLLMProvider):
 
     name = "anthropic"
 
-    def __init__(self, api_key: str) -> None:
+    def __init__(self, api_key: str, *, timeout_seconds: float = 60.0) -> None:
         self._api_key = api_key
+        self._timeout = timeout_seconds
 
     async def complete(
         self, *, model: str, messages: list[Message], max_tokens: int
@@ -75,18 +76,24 @@ class AnthropicLLMProvider(BaseLLMProvider):
                 "AI_PROVIDER=stub."
             ) from exc
 
+        from anthropic import omit
+        from anthropic.types import MessageParam
+
         system = "\n".join(m.content for m in messages if m.role == "system")
-        turns = [
-            {"role": m.role.value, "content": m.content}
+        turns: list[MessageParam] = [
+            {
+                "role": "user" if m.role.value == "user" else "assistant",
+                "content": m.content,
+            }
             for m in messages
             if m.role != "system"
         ]
-        client = AsyncAnthropic(api_key=self._api_key)
+        client = AsyncAnthropic(api_key=self._api_key, timeout=self._timeout)
         try:
             resp = await client.messages.create(
                 model=model,
                 max_tokens=max_tokens,
-                system=system or None,
+                system=system if system else omit,
                 messages=turns,
             )
         except Exception as exc:  # pragma: no cover - network
@@ -113,5 +120,8 @@ def build_provider(settings: Settings) -> BaseLLMProvider:
             raise LLMError(
                 "AI_PROVIDER=anthropic but ANTHROPIC_API_KEY is empty."
             )
-        return AnthropicLLMProvider(api_key=settings.anthropic_api_key)
+        return AnthropicLLMProvider(
+            api_key=settings.anthropic_api_key,
+            timeout_seconds=settings.llm_request_timeout_seconds,
+        )
     return StubLLMProvider()

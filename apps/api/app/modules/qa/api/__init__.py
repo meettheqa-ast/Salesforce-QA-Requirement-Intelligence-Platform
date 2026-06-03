@@ -11,4 +11,7 @@ memory. Owns qa_sessions, qa_messages. Implemented in Sprint 4.
 
 from __future__ import annotations
 
-__all__: list[str] = []
+from app.modules.qa._internal.router import router
+from app.modules.qa._internal.schemas import AskRequest, AskResponse
+
+__all__ = ["AskRequest", "AskResponse", "router"]

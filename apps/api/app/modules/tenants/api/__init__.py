@@ -13,18 +13,21 @@ from app.modules.tenants._internal.schemas import (
     UserOut,
 )
 from app.modules.tenants._internal.service import (
+    ResolvedIdentity,
     add_member,
     create_tenant,
     create_user,
     get_tenant,
     list_members,
     list_tenants,
+    resolve_identity,
 )
 
 __all__ = [
     "MemberRole",
     "MembershipCreate",
     "MembershipOut",
+    "ResolvedIdentity",
     "TenantCreate",
     "TenantOut",
     "TenantStatus",
@@ -37,5 +40,6 @@ __all__ = [
     "get_tenant",
     "list_members",
     "list_tenants",
+    "resolve_identity",
     "router",
 ]

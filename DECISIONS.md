@@ -248,11 +248,92 @@ if a single source is preferred.
 
 ---
 
+## D-0018 · 2026-06-03 · OIDC = Auth0-primary, claims-first with DB fallback
+
+**Decision:** Real OIDC verification (RS256 + JWKS cache + issuer/audience/exp
+checks) targets Auth0 as the primary IdP but stays configurable. `tenant_id`/
+`role` resolve claims-first (namespaced custom claims), falling back to a DB
+membership lookup by token subject/email when claims are absent. A token claim
+that disagrees with the DB membership is rejected (403).
+
+**Reasoning:** Auth0 needs namespaced custom claims, which not every token will
+carry; a DB fallback keeps auth working without forcing claim configuration,
+while the disagreement check prevents a user asserting a tenant they don't
+belong to — the tenant-isolation boundary must not be bypassable via a forged
+claim.
+
+**Confidence:** [Certain] for the verification path (unit-tested with a local
+RSA key + mocked JWKS: valid/expired/wrong-aud/wrong-iss/tampered/no-claims).
+**Reversible:** Yes — claim names and fallback are configurable.
+
+---
+
+## D-0019 · 2026-06-03 · Auth dependency is async; providers only verify
+
+**Decision:** Auth providers (`verify`) do crypto + claim extraction only and
+return `VerifiedClaims`. The FastAPI dependency `get_current_principal` is async
+and owns Principal resolution (including the DB fallback).
+
+**Reasoning:** DB lookup is async and needs a session; keeping it out of the
+provider keeps providers pure and testable without a DB, and puts the
+security-critical tenant decision in one place.
+
+**Confidence:** [Certain]. **Reversible:** Low cost.
+
+---
+
+## D-0020 · 2026-06-03 · First user-facing LLM path = POST /api/v1/qa/ask
+
+**Decision:** A minimal authenticated `qa.ask` endpoint runs the versioned
+`qa.answer` prompt through the `ai_client.complete()` chokepoint. No retrieval
+yet (Sprint 4); the prompt is told context is empty. Budget exceedance returns
+HTTP 402; provider failure returns 502.
+
+**Reasoning:** Budget enforcement could only be proven via tests before this; a
+real endpoint makes the budget gate observable end-to-end and gives Sprint 1 a
+tangible vertical slice without pulling Sprint 4 retrieval forward.
+
+**Confidence:** [Certain] — endpoint tested (stub answer, auth-required, 402
+over-budget). **Reversible:** Yes.
+
+---
+
+## D-0021 · 2026-06-03 · LLM calls go to Anthropic directly; NOT through Cursor
+
+**Decision:** Reaffirmed: the product's runtime LLM traffic calls Anthropic
+directly. Cursor credentials are never used for product inference. The live
+Anthropic acceptance call is deferred until a real `sk-ant-` key is available;
+Sprint 1 ships stub-verified.
+
+**Reasoning:** Cursor's API/SDK is for agentic dev tooling, not a sanctioned
+production inference backend. Routing product traffic through it risks
+terms-of-use violation, loses per-tenant cost attribution (which the metering/
+budget design depends on), cedes model control, and adds a data processor. A
+`crsr_` token was offered as an inference key; it was declined and the user
+confirmed the real motive was simply lacking an Anthropic key. If vendor
+flexibility becomes a goal, the path is a provider-agnostic gateway behind the
+existing `ai_client` abstraction — not Cursor.
+
+**Confidence:** [Certain]. **Reversible:** N/A (a no-op reaffirmation of D-0004).
+
+---
+
+## D-0022 · 2026-06-03 · Default models bumped to current SDK ids
+
+**Decision:** `anthropic_model_primary` = `claude-opus-4-8`,
+`anthropic_model_cheap` = `claude-haiku-4-5` (from the older opus-4-5 default),
+matching ids the installed anthropic SDK (0.105.2) advertises.
+
+**Confidence:** [Likely] these are current. **Reversible:** Yes — env override
+plus the two settings defaults.
+
+---
+
 ## Unresolved working assumptions (carry-over from execution plan)
 
 These are *not* decisions yet. They are flagged risks awaiting user input:
 
-1. **AI provider clarification** — current default: Anthropic direct (per D-0004). "Use Cursor API credentials" framing from earlier prompts was explicitly rejected.
+1. **AI provider clarification** — RESOLVED. Anthropic direct (D-0004, reaffirmed D-0021). Cursor-credential routing explicitly declined again on 2026-06-03. Live key still pending for the one-time live acceptance call.
 2. **Hosting target** — assumed AWS; not yet committed.
 3. **Pricing model** — assumed usage-based with monthly tier cap; metering is built, UI is V1.
 4. **TestingBuddy event bus contract** — assumed Postgres outbox + Redis Streams; replace when TB defines its bus.
