@@ -43,6 +43,10 @@ out/
 *.tsbuildinfo
 .vercel
 
+# Generated API contract + codegen output (regenerate via `pnpm gen:types`)
+apps/api/openapi.json
+packages/shared-types/src/openapi.ts
+
 # ============================================================================
 # Docker / data volumes (dev)
 # ============================================================================

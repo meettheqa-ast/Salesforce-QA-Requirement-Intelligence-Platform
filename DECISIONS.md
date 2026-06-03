@@ -187,6 +187,67 @@ prepared-statement protocol raised a syntax error on `SET LOCAL ... = $1`.
 
 ---
 
+## D-0014 · 2026-06-03 · pnpm via npm-global + corepack disabled
+
+**Decision:** pnpm 11.5.1 is installed via `npm install -g pnpm` (user-writable
+prefix), not corepack. Approved native builds are pinned in `pnpm-workspace.yaml`
+under `onlyBuiltDependencies` (sharp, unrs-resolver).
+
+**Reasoning:** corepack failed with EPERM writing to `C:\Program Files\nodejs`
+(admin-only) on this machine. The npm-global prefix is user-writable. pnpm 11
+moved `onlyBuiltDependencies` out of package.json into the workspace file.
+
+**Confidence:** [Certain]. **Reversible:** Yes — switch to corepack with elevated
+permissions if desired.
+
+---
+
+## D-0015 · 2026-06-03 · React 18.3, not the React 19 RC
+
+**Decision:** apps/web pins React 18.3.1 even though Next 15.0.3 also accepts the
+React 19 RC.
+
+**Reasoning:** For a foundation we intend to maintain, an RC on the critical path
+trades stability for nothing we need yet. 18.3 has stable `@types/react@18` and
+fewer ecosystem mismatches. Upgrade to 19 is a deliberate, separate step.
+
+**Confidence:** [Likely best for stability]. **Reversible:** Yes — bump React +
+types and re-test.
+
+---
+
+## D-0016 · 2026-06-03 · skelter confined behind a local wrapper
+
+**Decision:** `react-zero-skeleton` (skelter) is the chosen runtime skeleton lib
+(per the UI/UX decision), but every import is confined to
+`apps/web/src/components/skeleton.tsx`.
+
+**Reasoning:** skelter 1.0.2 was published the day before adoption — single
+maintainer, 25 churned versions, and a packaging quirk (`types` points to a
+`.d.ts` not shipped; only `.d.mts` is present). Wrapping it makes a future swap a
+one-file change and contains supply-chain/stability risk on the load-state path.
+
+**Confidence:** [Likely] this risk is real. **Reversible:** Yes — replace the
+wrapper internals.
+
+---
+
+## D-0017 · 2026-06-03 · OpenAPI-driven shared types with a hand-maintained fallback
+
+**Decision:** `packages/shared-types` generates `src/openapi.ts` from the API's
+OpenAPI schema (`pnpm gen:types`); the generated file is gitignored. A small set
+of hand-maintained shapes in `src/index.ts` is the committed fallback.
+
+**Reasoning:** Committing generated code invites drift and noisy diffs. But CI and
+fresh clones must compile without running the Python exporter, so a minimal
+typed fallback keeps the web build self-sufficient. Codegen is the source of
+truth when present.
+
+**Confidence:** [Certain]. **Reversible:** Yes — commit the generated file instead
+if a single source is preferred.
+
+---
+
 ## Unresolved working assumptions (carry-over from execution plan)
 
 These are *not* decisions yet. They are flagged risks awaiting user input:

@@ -1,0 +1,17 @@
+{
+  "name": "sfqa-monorepo",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Salesforce QA Requirement Intelligence Platform - monorepo root",
+  "scripts": {
+    "dev:web": "pnpm --filter @sfqa/web dev",
+    "build:web": "pnpm --filter @sfqa/web build",
+    "lint:web": "pnpm --filter @sfqa/web lint",
+    "typecheck:web": "pnpm --filter @sfqa/web typecheck",
+    "gen:types": "pnpm --filter @sfqa/shared-types generate"
+  },
+  "packageManager": "pnpm@11.5.1",
+  "engines": {
+    "node": ">=20"
+  }
+}

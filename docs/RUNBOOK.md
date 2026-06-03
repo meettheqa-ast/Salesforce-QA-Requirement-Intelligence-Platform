@@ -64,7 +64,40 @@ uv run pytest -q             # tests (RLS isolation test requires Postgres up)
 
 ## Running the web app (apps/web)
 
-Populated in **Sprint 0 Batch 3.** Not yet runnable.
+Verified working as of Sprint 0 Batch 3.
+
+```powershell
+# Ensure pnpm is on PATH (installed via: npm install -g pnpm)
+$env:Path = "$env:APPDATA\npm;$env:Path"
+
+# from repo root
+pnpm install                 # installs all workspace deps
+pnpm dev:web                 # Next.js dev server -> http://localhost:3000
+```
+
+Open http://localhost:3000, sign in with the dev form (defaults work if two test
+tenants exist), and you land on `/dashboard`, which calls `GET /auth/me`.
+
+The API must be running on `http://localhost:8000` (override with
+`NEXT_PUBLIC_API_BASE_URL` in `apps/web/.env.local`).
+
+### Web quality gates
+
+```powershell
+pnpm --filter @sfqa/web typecheck
+pnpm --filter @sfqa/web lint
+pnpm --filter @sfqa/web build
+```
+
+### Regenerate shared API types
+
+```powershell
+pnpm gen:types   # exports apps/api/openapi.json then codegens openapi.ts
+```
+
+If `pnpm install` warns about ignored build scripts (sharp / unrs-resolver),
+run `pnpm rebuild sharp unrs-resolver` once; they are pre-approved in
+`pnpm-workspace.yaml`.
 
 ## Common operations
 

@@ -1,0 +1,21 @@
+{
+  "name": "@sfqa/shared-types",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Generated TypeScript types from the SFQA API OpenAPI schema.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "export:schema": "cd ../../apps/api && uv run python scripts/export_openapi.py",
+    "generate": "pnpm export:schema && openapi-typescript ../../apps/api/openapi.json -o ./src/openapi.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.4.2",
+    "typescript": "^5.6.3"
+  }
+}
