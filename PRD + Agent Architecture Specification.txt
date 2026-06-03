@@ -1,0 +1,551 @@
+PRD + Agent Architecture Specification
+TestingBuddy — Salesforce QA Requirement Intelligence Platform
+1. Executive Summary
+Product Name
+
+Salesforce QA Requirement Intelligence Agent
+
+Vision
+
+Build an AI-powered requirement intelligence platform that enables QA engineers, Salesforce testers, business analysts, QA leads, and automation engineers to:
+
+Fetch Jira stories and requirements
+Build a persistent project knowledge base
+Analyze requirements for completeness and quality
+Detect gaps, ambiguities, contradictions, and missing testability criteria
+Leverage deep Salesforce domain knowledge during analysis
+Generate high-quality test artifacts
+Continuously monitor requirement changes
+Push generated assets back into Jira and test management systems
+
+The platform should evolve from a simple requirement analysis tool into a Salesforce QA Intelligence Layer that sits at the beginning of the entire QA lifecycle.
+
+2. Business Goals
+Primary Goals
+Goal 1
+
+Reduce requirement review effort by 70–90%.
+
+Goal 2
+
+Identify requirement gaps before test design begins.
+
+Goal 3
+
+Generate test-ready artifacts automatically.
+
+Goal 4
+
+Create reusable project knowledge repositories.
+
+Goal 5
+
+Provide Salesforce-specific requirement intelligence unavailable in generic AI tools.
+
+Strategic Goals
+
+Position TestingBuddy as:
+
+The AI-native QA Operating System for Salesforce Testing Teams.
+
+3. Core User Personas
+Persona 1 — Salesforce QA Engineer
+
+Needs:
+
+Requirement understanding
+Test case generation
+Gap detection
+Regression planning
+Persona 2 — QA Lead
+
+Needs:
+
+Test planning
+Coverage visibility
+Risk analysis
+Persona 3 — Business Analyst
+
+Needs:
+
+Requirement validation
+Acceptance criteria review
+Persona 4 — Automation Engineer
+
+Needs:
+
+Automation-ready test scenarios
+Requirement traceability
+Persona 5 — Salesforce Consultant
+
+Needs:
+
+Salesforce best practice validation
+Functional impact analysis
+4. Product Scope
+Phase 1
+Requirement Intelligence
+Jira integration
+Story ingestion
+Requirement analysis
+Gap analysis
+RAG creation
+Q&A
+Test case generation
+Phase 2
+Change Intelligence
+Story refresh
+Version comparison
+Impact analysis
+Phase 3
+Salesforce Intelligence
+Metadata ingestion
+Org-aware reasoning
+Configuration analysis
+Phase 4
+Multi-Agent Orchestration
+Planning integration
+Coverage integration
+Regression integration
+5. Functional Requirements
+Module A — Jira Intelligence
+Purpose
+
+Collect requirements from Jira.
+
+Supported Sources
+Jira Cloud
+Jira Data Center (future)
+User Actions
+Connect Jira
+
+Inputs:
+
+Connection Name
+Jira URL
+Email
+API Token
+Fetch Stories
+
+Selection methods:
+
+Project
+Sprint
+Epic
+Issue Keys
+JQL Query
+Data To Collect
+
+Story fields:
+
+Summary
+Description
+Acceptance Criteria
+Comments
+Attachments Metadata
+Linked Issues
+Story Points
+Labels
+Components
+Sprint
+Status
+Reporter
+Assignee
+Priority
+Module B — Knowledge Base (RAG)
+Purpose
+
+Create reusable project intelligence repositories.
+
+User Actions
+Create Knowledge Base
+
+Example:
+
+"Service Cloud Sprint 34"
+
+Save Repository
+
+Stores:
+
+Stories
+Comments
+Relationships
+Analysis
+Refresh Repository
+
+Refetch:
+
+Stories
+Comments
+Linked issues
+Archive Repository
+Delete Repository
+Metadata
+
+Store:
+
+Project
+Sprint
+Release
+Creation Date
+Last Refresh Date
+Owner
+Module C — Salesforce Intelligence Layer
+Purpose
+
+Apply Salesforce-specific reasoning.
+
+Supported Knowledge Domains
+Core Platform
+Objects
+Fields
+Record Types
+Page Layouts
+Validation Rules
+Security
+Profiles
+Permission Sets
+Sharing Rules
+Role Hierarchy
+Automation
+Flow
+Apex
+Process Builder
+Approval Processes
+Clouds
+Sales Cloud
+Service Cloud
+Experience Cloud
+Revenue Cloud
+CPQ
+Marketing Cloud
+Health Cloud
+FSC
+Education Cloud
+Expected Analysis
+
+Example:
+
+Requirement:
+
+Service Agent updates Opportunity Stage
+
+System identifies:
+
+Permission implications
+Sharing implications
+Validation impacts
+Existing automation risks
+Module D — Requirement Analysis Agent
+Purpose
+
+Analyze requirement quality.
+
+Analysis Categories
+Completeness
+
+Detect:
+
+Missing details
+Missing business rules
+Ambiguity
+
+Detect:
+
+Vague terminology
+Undefined behavior
+Contradictions
+
+Detect:
+
+Story conflicts
+Requirement mismatches
+Salesforce Risks
+
+Detect:
+
+Permission conflicts
+Automation conflicts
+Data model conflicts
+Testability
+
+Detect:
+
+Missing acceptance criteria
+Missing validations
+Missing negative paths
+Outputs
+Analysis Report
+
+Sections:
+
+Strengths
+Risks
+Gaps
+Clarification Questions
+Recommendations
+Module E — Requirement Q&A Agent
+Purpose
+
+Allow users to interact with the knowledge base.
+
+Example Questions
+
+Show all stories impacting Opportunity.
+
+Which stories affect Service Cloud users?
+
+Which stories mention Approval Processes?
+
+Which stories have missing acceptance criteria?
+
+Features
+Semantic Search
+Story References
+Source Citations
+Module F — Test Case Generation Agent
+Purpose
+
+Generate QA assets.
+
+Generation Modes
+Single Story
+Multiple Stories
+Epic
+Entire Repository
+Output Types
+Manual Test Cases
+BDD / Gherkin
+Salesforce Regression Suite
+Automation Ready
+API Test Cases
+Test Case Fields
+Test Case ID
+Scenario
+Preconditions
+Test Data
+Steps
+Expected Results
+Priority
+Tags
+Module G — Export Engine
+Supported Formats
+CSV
+XLSX
+JSON
+Markdown
+Future Formats
+TestRail
+Zephyr
+Xray
+Module H — Jira Publishing
+Purpose
+
+Push generated artifacts back to Jira.
+
+Supported Targets
+Story
+Epic
+Task
+Future Support
+Xray
+Zephyr
+TestRail
+User Flow
+
+Generate Cases
+
+↓
+
+Select Target Story
+
+↓
+
+Publish
+
+↓
+
+Confirmation
+
+Module I — Change Intelligence
+Purpose
+
+Detect requirement changes.
+
+Trigger
+
+Refresh Repository
+
+Compare
+
+Previous Version
+
+VS
+
+Current Version
+
+Detect
+New Acceptance Criteria
+Updated Description
+New Comments
+Removed Content
+Linked Issue Changes
+Output
+
+Change Report
+
+Module J — Traceability
+Purpose
+
+Link requirements and tests.
+
+Generate
+
+Requirement
+
+↓
+
+Acceptance Criteria
+
+↓
+
+Test Cases
+
+↓
+
+Coverage
+
+Outputs
+
+Coverage Matrix
+
+Coverage %
+
+Gap Report
+
+6. Non-Functional Requirements
+Performance
+
+Story fetch:
+
+< 30 seconds
+
+Gap analysis:
+
+< 60 seconds
+
+Test case generation:
+
+< 90 seconds
+
+Scalability
+
+Support:
+
+1000+ stories
+Multiple repositories
+Multi-project environments
+Security
+Encrypted credentials
+User-level access control
+Audit logs
+Reliability
+Retry failed Jira syncs
+Background processing
+Resume interrupted jobs
+7. Recommended Agent Architecture
+
+Instead of one large agent:
+
+Agent 1
+Jira Intelligence Agent
+
+Responsibilities:
+
+Fetch
+Sync
+Refresh
+Agent 2
+Salesforce Requirement Analysis Agent
+
+Responsibilities:
+
+Gap analysis
+Clarifications
+Salesforce reasoning
+Agent 3
+Requirement Q&A Agent
+
+Responsibilities:
+
+Semantic search
+Conversational retrieval
+Agent 4
+Test Case Generation Agent
+
+Responsibilities:
+
+Test creation
+Export preparation
+Agent 5
+Change Intelligence Agent
+
+Responsibilities:
+
+Version comparison
+Impact analysis
+Agent 6
+Traceability Agent
+
+Responsibilities:
+
+Coverage
+Requirement linkage
+8. Future Enhancements
+Salesforce Metadata Upload
+
+Upload:
+
+Validation Rules
+Flow Metadata
+Profiles
+Permission Sets
+Object Metadata
+
+Result:
+
+Org-aware analysis instead of generic Salesforce reasoning.
+
+Story Relationship Graph
+
+Visual dependency map.
+
+AI Confidence Scoring
+
+Per artifact:
+
+Requirement Analysis Confidence
+Test Case Confidence
+Coverage Confidence
+Multi-Agent Orchestrator
+
+Coordinates:
+
+Requirement Analysis
+→ Test Planning
+→ Test Case Generation
+→ Regression Planning
+→ Reporting
+
+Final Product Positioning
+
+This should not be positioned as:
+
+"A Jira Story Analyzer"
+
+It should be positioned as:
+
+Salesforce QA Requirement Intelligence Platform
+
+A persistent, Salesforce-aware requirement intelligence system that transforms Jira requirements into validated, testable, traceable QA assets while continuously monitoring change and maintaining project knowledge over time.

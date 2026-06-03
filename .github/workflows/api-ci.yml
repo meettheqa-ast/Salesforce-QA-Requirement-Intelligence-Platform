@@ -1,0 +1,82 @@
+name: API CI
+
+on:
+  push:
+    paths:
+      - "apps/api/**"
+      - "prompts/**"
+      - ".github/workflows/api-ci.yml"
+  pull_request:
+    paths:
+      - "apps/api/**"
+      - "prompts/**"
+      - ".github/workflows/api-ci.yml"
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: sfqa
+          POSTGRES_PASSWORD: sfqa_dev_only
+          POSTGRES_DB: sfqa
+        ports:
+          - "5433:5432"
+        options: >-
+          --health-cmd "pg_isready -U sfqa -d sfqa"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # CI runs migrations as superuser and app queries as superuser too, BUT
+      # the RLS test would then falsely pass (superuser bypasses RLS). So CI
+      # creates the restricted role explicitly before tests, mirroring the
+      # docker-entrypoint-initdb.d script used locally.
+      MIGRATION_DATABASE_URL: postgresql+asyncpg://sfqa:sfqa_dev_only@localhost:5433/sfqa
+      DATABASE_URL: postgresql+asyncpg://sfqa_app:sfqa_app_dev_only@localhost:5433/sfqa
+      AI_PROVIDER: stub
+      EMBEDDINGS_PROVIDER: stub
+      JIRA_PROVIDER: stub
+      AUTH_PROVIDER: dev
+
+    defaults:
+      run:
+        working-directory: apps/api
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Create restricted app role (mirrors initdb script)
+        run: |
+          PGPASSWORD=sfqa_dev_only psql -h localhost -p 5433 -U sfqa -d sfqa \
+            -f ../../infra/docker/initdb/01-app-role.sql
+        env:
+          PGPASSWORD: sfqa_dev_only
+
+      - name: Lint (ruff)
+        run: uv run ruff check .
+
+      - name: Typecheck (mypy)
+        run: uv run mypy app
+
+      - name: Module boundaries (import-linter)
+        run: uv run lint-imports
+
+      - name: Migrate
+        run: uv run alembic upgrade head
+
+      - name: Test (pytest)
+        run: uv run pytest -q

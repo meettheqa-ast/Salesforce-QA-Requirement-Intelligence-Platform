@@ -1,0 +1,165 @@
+[project]
+name = "sfqa-api"
+version = "0.0.1"
+description = "Salesforce QA Requirement Intelligence Platform - API"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic[email]>=2.9.0",
+    "pydantic-settings>=2.6.0",
+    "sqlalchemy>=2.0.36",
+    "asyncpg>=0.30.0",
+    "alembic>=1.14.0",
+    "pgvector>=0.3.6",
+    "redis>=5.2.0",
+    "arq>=0.26.1",
+    "httpx>=0.28.0",
+    "python-jose[cryptography]>=3.3.0",
+    "structlog>=24.4.0",
+    "tenacity>=9.0.0",
+    "tiktoken>=0.8.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
+    "import-linter>=2.1",
+    "asgi-lifespan>=2.1.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["app", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "ASYNC", "S", "C4", "SIM", "RUF"]
+ignore = [
+    "S101",  # assert is fine in tests
+    "N818",  # domain exceptions (BudgetExceeded, PromptNotFound) keep their names
+    "B008",  # FastAPI dependency injection uses Depends() in argument defaults
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106"]  # hardcoded test secrets are fine
+# Dev-only default values that look like secrets to the scanner but are not.
+"app/settings.py" = ["S105"]
+"app/modules/auth/_internal/router.py" = ["S105"]  # token_type="bearer"
+# arq's WorkerSettings API requires a mutable class-level `functions` list.
+"app/modules/jobs/_internal/runtime.py" = ["RUF012"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+ignore_missing_imports = true
+warn_return_any = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-ra -q"
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["app/main.py", "tests/*"]
+
+# ---------------------------------------------------------------------------
+# import-linter: enforces module boundaries described in docs/AGENTS.md.
+# A module's _internal package may only be imported by that same module.
+# Cross-module access must go through the public `<module>.api` package.
+# Each contract below forbids every OTHER module from importing this module's
+# _internal package. A module importing its own _internal is allowed.
+#
+# allow_indirect_imports = true means only DIRECT imports of a private internal
+# package count as violations. Transitive chains that pass through a legitimate
+# public `<module>.api` boundary (e.g. ai_client.api -> audit.api -> audit._internal)
+# are not flagged, which is the intended semantic.
+# ---------------------------------------------------------------------------
+[tool.importlinter]
+root_package = "app"
+
+[[tool.importlinter.contracts]]
+name = "audit internals are private"
+type = "forbidden"
+source_modules = [
+    "app.modules.auth", "app.modules.tenants", "app.modules.connections",
+    "app.modules.jira", "app.modules.repositories", "app.modules.rag",
+    "app.modules.salesforce_knowledge", "app.modules.analysis",
+    "app.modules.test_generation", "app.modules.qa", "app.modules.exports",
+    "app.modules.publishing", "app.modules.change_intelligence",
+    "app.modules.traceability", "app.modules.ai_client", "app.modules.jobs",
+    "app.modules.metering",
+]
+forbidden_modules = ["app.modules.audit._internal"]
+allow_indirect_imports = "true"
+
+[[tool.importlinter.contracts]]
+name = "metering internals are private"
+type = "forbidden"
+source_modules = [
+    "app.modules.auth", "app.modules.tenants", "app.modules.connections",
+    "app.modules.jira", "app.modules.repositories", "app.modules.rag",
+    "app.modules.salesforce_knowledge", "app.modules.analysis",
+    "app.modules.test_generation", "app.modules.qa", "app.modules.exports",
+    "app.modules.publishing", "app.modules.change_intelligence",
+    "app.modules.traceability", "app.modules.ai_client", "app.modules.jobs",
+    "app.modules.audit",
+]
+forbidden_modules = ["app.modules.metering._internal"]
+allow_indirect_imports = "true"
+
+[[tool.importlinter.contracts]]
+name = "ai_client internals are private"
+type = "forbidden"
+source_modules = [
+    "app.modules.auth", "app.modules.tenants", "app.modules.connections",
+    "app.modules.jira", "app.modules.repositories", "app.modules.rag",
+    "app.modules.salesforce_knowledge", "app.modules.analysis",
+    "app.modules.test_generation", "app.modules.qa", "app.modules.exports",
+    "app.modules.publishing", "app.modules.change_intelligence",
+    "app.modules.traceability", "app.modules.jobs", "app.modules.audit",
+    "app.modules.metering",
+]
+forbidden_modules = ["app.modules.ai_client._internal"]
+allow_indirect_imports = "true"
+
+[[tool.importlinter.contracts]]
+name = "tenants internals are private"
+type = "forbidden"
+source_modules = [
+    "app.modules.auth", "app.modules.connections",
+    "app.modules.jira", "app.modules.repositories", "app.modules.rag",
+    "app.modules.salesforce_knowledge", "app.modules.analysis",
+    "app.modules.test_generation", "app.modules.qa", "app.modules.exports",
+    "app.modules.publishing", "app.modules.change_intelligence",
+    "app.modules.traceability", "app.modules.ai_client", "app.modules.jobs",
+    "app.modules.audit", "app.modules.metering",
+]
+forbidden_modules = ["app.modules.tenants._internal"]
+allow_indirect_imports = "true"
+
+[[tool.importlinter.contracts]]
+name = "auth internals are private"
+type = "forbidden"
+source_modules = [
+    "app.modules.tenants", "app.modules.connections",
+    "app.modules.jira", "app.modules.repositories", "app.modules.rag",
+    "app.modules.salesforce_knowledge", "app.modules.analysis",
+    "app.modules.test_generation", "app.modules.qa", "app.modules.exports",
+    "app.modules.publishing", "app.modules.change_intelligence",
+    "app.modules.traceability", "app.modules.ai_client", "app.modules.jobs",
+    "app.modules.audit", "app.modules.metering",
+]
+forbidden_modules = ["app.modules.auth._internal"]
+allow_indirect_imports = "true"
+

@@ -1,0 +1,55 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: sfqa_postgres
+    environment:
+      POSTGRES_USER: sfqa
+      POSTGRES_PASSWORD: sfqa_dev_only
+      POSTGRES_DB: sfqa
+    ports:
+      # Host 5433 to avoid clashing with a natively-installed PostgreSQL on 5432.
+      - "5433:5432"
+    volumes:
+      - sfqa_postgres_data:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sfqa -d sfqa"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: sfqa_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - sfqa_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: sfqa_minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: sfqa_minio
+      MINIO_ROOT_PASSWORD: sfqa_minio_dev_only
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - sfqa_minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  sfqa_postgres_data:
+  sfqa_redis_data:
+  sfqa_minio_data:
