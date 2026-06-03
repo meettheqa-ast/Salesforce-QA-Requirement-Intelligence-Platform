@@ -59,6 +59,10 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     app_secret_key: str = "change-me-dev-only-not-for-production"
 
+    # CORS. Comma-separated list of allowed browser origins. Defaults cover the
+    # local web dev server on common ports. Set explicitly per environment.
+    cors_allow_origins: str = "http://localhost:3000,http://localhost:3001"
+
     # Database
     # Host port 5433 avoids clashing with a natively-installed PostgreSQL on 5432.
     #
@@ -120,6 +124,10 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.app_env == AppEnv.PROD
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        return [o.strip() for o in self.cors_allow_origins.split(",") if o.strip()]
 
 
 @lru_cache

@@ -6,8 +6,14 @@
  * @sfqa/shared-types replace the hand-written response shapes here.
  */
 
-export const API_BASE_URL =
+const API_ORIGIN =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+
+// Versioned API routers are mounted under /api/v1 (see apps/api/app/main.py).
+// Health endpoints live at the root, so they are requested explicitly below.
+const API_PREFIX = "/api/v1";
+
+export const API_BASE_URL = `${API_ORIGIN}${API_PREFIX}`;
 
 export class ApiError extends Error {
   constructor(
@@ -78,7 +84,10 @@ export const api = {
   whoami(token: string): Promise<WhoAmI> {
     return request<WhoAmI>("/auth/me", { token });
   },
-  health(): Promise<{ status: string }> {
-    return request<{ status: string }>("/healthz");
+  async health(): Promise<{ status: string }> {
+    // /healthz is mounted at the root, not under the versioned prefix.
+    const res = await fetch(`${API_ORIGIN}/healthz`);
+    if (!res.ok) throw new ApiError(res.status, res.statusText);
+    return (await res.json()) as { status: string };
   },
 };

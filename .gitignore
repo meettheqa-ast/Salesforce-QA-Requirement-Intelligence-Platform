@@ -47,6 +47,11 @@ out/
 apps/api/openapi.json
 packages/shared-types/src/openapi.ts
 
+# Local run logs and browser-automation artifacts
+api_run.log
+web_run.log
+.playwright-mcp/
+
 # ============================================================================
 # Docker / data volumes (dev)
 # ============================================================================
