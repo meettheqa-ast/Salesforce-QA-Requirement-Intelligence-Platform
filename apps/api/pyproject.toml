@@ -54,6 +54,8 @@ ignore = [
 # Dev-only default values that look like secrets to the scanner but are not.
 "app/settings.py" = ["S105"]
 "app/modules/auth/_internal/router.py" = ["S105"]  # token_type="bearer"
+# AuthType.API_TOKEN = "api_token" is an enum label, not a credential.
+"app/modules/connections/_internal/models.py" = ["S105"]
 # arq's WorkerSettings API requires a mutable class-level `functions` list.
 "app/modules/jobs/_internal/runtime.py" = ["RUF012"]
 
@@ -177,5 +179,35 @@ source_modules = [
     "app.modules.audit", "app.modules.metering",
 ]
 forbidden_modules = ["app.modules.qa._internal"]
+allow_indirect_imports = "true"
+
+[[tool.importlinter.contracts]]
+name = "connections internals are private"
+type = "forbidden"
+source_modules = [
+    "app.modules.auth", "app.modules.tenants",
+    "app.modules.jira", "app.modules.repositories", "app.modules.rag",
+    "app.modules.salesforce_knowledge", "app.modules.analysis",
+    "app.modules.test_generation", "app.modules.qa", "app.modules.exports",
+    "app.modules.publishing", "app.modules.change_intelligence",
+    "app.modules.traceability", "app.modules.ai_client", "app.modules.jobs",
+    "app.modules.audit", "app.modules.metering",
+]
+forbidden_modules = ["app.modules.connections._internal"]
+allow_indirect_imports = "true"
+
+[[tool.importlinter.contracts]]
+name = "repositories internals are private"
+type = "forbidden"
+source_modules = [
+    "app.modules.auth", "app.modules.tenants", "app.modules.connections",
+    "app.modules.jira", "app.modules.rag",
+    "app.modules.salesforce_knowledge", "app.modules.analysis",
+    "app.modules.test_generation", "app.modules.qa", "app.modules.exports",
+    "app.modules.publishing", "app.modules.change_intelligence",
+    "app.modules.traceability", "app.modules.ai_client", "app.modules.jobs",
+    "app.modules.audit", "app.modules.metering",
+]
+forbidden_modules = ["app.modules.repositories._internal"]
 allow_indirect_imports = "true"
 

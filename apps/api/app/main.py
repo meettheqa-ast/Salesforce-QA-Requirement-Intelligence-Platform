@@ -18,7 +18,9 @@ from app.middleware import RequestContextMiddleware
 
 # Module routers (public api surfaces only).
 from app.modules.auth.api import router as auth_router
+from app.modules.connections.api import router as connections_router
 from app.modules.qa.api import router as qa_router
+from app.modules.repositories.api import router as repositories_router
 from app.modules.tenants.api import router as tenants_router
 from app.settings import AppEnv, get_settings
 
@@ -66,6 +68,8 @@ def create_app() -> FastAPI:
     app.include_router(auth_router, prefix="/api/v1")
     app.include_router(tenants_router, prefix="/api/v1")
     app.include_router(qa_router, prefix="/api/v1")
+    app.include_router(connections_router, prefix="/api/v1")
+    app.include_router(repositories_router, prefix="/api/v1")
 
     return app
 

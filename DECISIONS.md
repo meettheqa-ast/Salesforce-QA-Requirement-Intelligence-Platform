@@ -329,6 +329,77 @@ plus the two settings defaults.
 
 ---
 
+## D-0023 · 2026-06-04 · Envelope encryption lives in app/crypto.py (infra, not a module)
+
+**Decision:** Secret sealing/opening is an app-level utility (`app/crypto.py`),
+not a domain module, so it is exempt from module-boundary import rules — like
+`db.py`. Only `connections` may call it (enforced by convention + AGENTS.md).
+Scheme: random per-secret AES-256-GCM DEK, DEK wrapped by a KEK from the KMS;
+local KEK derives a 32-byte key from `KMS_LOCAL_MASTER_KEY` via SHA-256.
+AWS/GCP KEKs raise NotImplemented rather than silently weakening.
+
+**Reasoning:** A `kms` domain module would add boundary ceremony for pure
+infrastructure. Keeping it app-level mirrors the existing `db`/`crypto` split.
+
+**Confidence:** [Certain] for the local path (round-trip + tamper tests).
+**Reversible:** Yes — promote to a module if it grows domain logic.
+
+---
+
+## D-0024 · 2026-06-04 · connections is the only secret-decrypting module
+
+**Decision:** `connections.get_credentials_for_use(connection_id, purpose)` is
+the single decrypt path; it audits every use (action + purpose, never the secret)
+and is the only function that returns plaintext credentials — to in-process
+callers only. No schema serializes a decrypted secret to an HTTP response;
+`ConnectionOut` omits it entirely.
+
+**Reasoning:** Concentrating decryption in one audited chokepoint mirrors the
+ai_client LLM chokepoint and makes credential exposure reviewable in one place.
+
+**Confidence:** [Certain] — tested: persisted row never contains plaintext;
+in-process retrieval returns the real secret. **Reversible:** Low value to.
+
+---
+
+## D-0025 · 2026-06-04 · Tenant-scoped rows set tenant_id explicitly from context
+
+**Decision:** `create_*` functions on tenant-scoped tables set
+`tenant_id = require_tenant_id()` on the ORM object. `tenant_session` sets the
+RLS GUC for filtering but does NOT populate the column.
+
+**Reasoning:** RLS `WITH CHECK` rejects an INSERT whose `tenant_id` is NULL —
+caught by tests as an `InsufficientPrivilegeError` before shipping. The GUC
+governs visibility; the column must still be written. (Bug found and fixed in
+Batch A.)
+
+**Confidence:** [Certain]. **Reversible:** Could add an ORM default that reads
+the context var, but explicit is clearer for an audited boundary.
+
+---
+
+## D-0026 · 2026-06-04 · Chunks table now, chunking logic in Sprint 3
+
+**Decision:** `repository_document_chunks` is created in the Sprint 2 migration
+for schema stability, but no code populates it and the embedding vector column
+is deferred to the Sprint 3 (RAG) migration (so we don't pin a dimension before
+choosing the embeddings provider).
+
+**Confidence:** [Certain]. **Reversible:** Yes.
+
+---
+
+## D-0027 · 2026-06-04 · Version ingestion is idempotent on (repository, key)
+
+**Decision:** `ingest_version` is a no-op-returning-existing when a version with
+the same `sync_idempotency_key` already exists for the repository. Versions are
+immutable, monotonically numbered snapshots.
+
+**Reasoning:** Sync jobs can be retried (arq); idempotency prevents duplicate
+versions from a re-run. **Confidence:** [Certain] — tested. **Reversible:** Yes.
+
+---
+
 ## Unresolved working assumptions (carry-over from execution plan)
 
 These are *not* decisions yet. They are flagged risks awaiting user input:

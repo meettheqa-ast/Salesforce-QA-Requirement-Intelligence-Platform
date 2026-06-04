@@ -11,4 +11,30 @@ Implemented in Sprint 2 (Repository + Jira Integration).
 
 from __future__ import annotations
 
-__all__: list[str] = []
+from app.modules.connections._internal.router import router
+from app.modules.connections._internal.schemas import (
+    ConnectionCreate,
+    ConnectionOut,
+    HealthStatus,
+)
+from app.modules.connections._internal.service import (
+    UsableCredentials,
+    check_health,
+    create_connection,
+    get_connection,
+    get_credentials_for_use,
+    list_connections,
+)
+
+__all__ = [
+    "ConnectionCreate",
+    "ConnectionOut",
+    "HealthStatus",
+    "UsableCredentials",
+    "check_health",
+    "create_connection",
+    "get_connection",
+    "get_credentials_for_use",
+    "list_connections",
+    "router",
+]

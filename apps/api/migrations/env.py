@@ -15,7 +15,9 @@ from app.db import Base
 # Import models so they register on Base.metadata. Keep this list in sync with
 # modules that own tables.
 from app.modules.audit._internal import models as _audit_models  # noqa: F401
+from app.modules.connections._internal import models as _connections_models  # noqa: F401
 from app.modules.metering._internal import models as _metering_models  # noqa: F401
+from app.modules.repositories._internal import models as _repositories_models  # noqa: F401
 from app.modules.tenants._internal import models as _tenants_models  # noqa: F401
 from app.settings import get_settings
 from sqlalchemy import pool
