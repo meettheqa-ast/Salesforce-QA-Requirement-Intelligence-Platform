@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import uuid
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 
+from app.context import require_tenant_id
 from app.modules.auth.api import Principal, require_role
+from app.modules.jobs.api import submit
 
 from . import service
 from .schemas import (
@@ -15,6 +19,12 @@ from .schemas import (
     RepositoryOut,
     RepositoryVersionOut,
 )
+
+
+class SyncAccepted(BaseModel):
+    repository_id: uuid.UUID
+    job_id: str | None
+    idempotency_key: str
 
 router = APIRouter(prefix="/repositories", tags=["repositories"])
 
@@ -82,6 +92,35 @@ async def hard_delete_repository(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except PermissionError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@router.post("/{repository_id}/sync", response_model=SyncAccepted, status_code=202)
+async def trigger_sync(
+    repository_id: uuid.UUID,
+    _p: Principal = Depends(require_role(*_MANAGE)),
+) -> SyncAccepted:
+    """Enqueue a background Jira sync for this repository.
+
+    A fresh idempotency key per request means each manual sync produces a new
+    version; retries of the SAME enqueued job (same key) are deduplicated by
+    the jobs runtime.
+    """
+    repo = await service.get_repository(repository_id)
+    if repo is None:
+        raise HTTPException(status_code=404, detail="Repository not found")
+    tenant_id = require_tenant_id()
+    idempotency_key = f"{repository_id}:{datetime.now(UTC).isoformat()}"
+    job_id = await submit(
+        "sync_repository_job",
+        tenant_id=tenant_id,
+        repository_id=str(repository_id),
+        connection_id=str(repo.connection_id) if repo.connection_id else None,
+        idempotency_key=idempotency_key,
+        dedup_key=idempotency_key,
+    )
+    return SyncAccepted(
+        repository_id=repository_id, job_id=job_id, idempotency_key=idempotency_key
+    )
 
 
 @router.get("/{repository_id}/versions", response_model=list[RepositoryVersionOut])

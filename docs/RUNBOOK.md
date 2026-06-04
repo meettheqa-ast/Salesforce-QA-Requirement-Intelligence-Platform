@@ -130,6 +130,48 @@ Set `AI_PROVIDER=anthropic` and `ANTHROPIC_API_KEY=sk-ant-...` in `apps/api/.env
 (gitignored). Never commit a key. Cursor credentials are NOT used for inference
 (see DECISIONS D-0021).
 
+### Ingest a Jira repository (Sprint 2 vertical slice)
+
+The pipeline is: create a connection (sealed credentials) -> create a repository
+-> trigger a sync -> issues are normalized to canonical stories and stored as an
+immutable repository version. With `JIRA_PROVIDER=stub` no real Jira is needed; a
+canned 3-issue corpus is used. Roles: tenant_admin | qa_lead to manage.
+
+```powershell
+# (reuse $tok from the QA example; needs tenant_admin or qa_lead role)
+$repo = @{name="My Reqs"} | ConvertTo-Json
+$r = Invoke-RestMethod http://localhost:8000/api/v1/repositories -Method POST -Body $repo -ContentType "application/json" -Headers @{Authorization="Bearer $tok"}
+
+# Trigger a background sync (requires the arq worker running, see below).
+Invoke-RestMethod "http://localhost:8000/api/v1/repositories/$($r.id)/sync" -Method POST -Headers @{Authorization="Bearer $tok"}
+
+# After the job runs, list versions and documents:
+$v = Invoke-RestMethod "http://localhost:8000/api/v1/repositories/$($r.id)/versions" -Headers @{Authorization="Bearer $tok"}
+Invoke-RestMethod "http://localhost:8000/api/v1/repositories/$($r.id)/versions/$($v[0].id)/documents" -Headers @{Authorization="Bearer $tok"}
+```
+
+Run the worker (consumes the sync queue):
+
+```powershell
+cd apps/api; uv run arq app.modules.jobs._internal.runtime.WorkerSettings
+```
+
+### Switching to real Jira Cloud
+
+Set `JIRA_PROVIDER=cloud`. Create a connection with `base_url`
+(`https://your-domain.atlassian.net`), `principal` = your Atlassian account
+email, and `secret` = a Jira API token. The token is sealed via envelope
+encryption; only the connections module decrypts it (audited). Then create the
+repository with that `connection_id` and trigger a sync.
+
+### Secrets and KMS
+
+`connections` is the only module that opens sealed secrets, via
+`get_credentials_for_use(connection_id, purpose=...)`, which audits every use.
+Dev uses `KMS_PROVIDER=local` (KEK derived from `KMS_LOCAL_MASTER_KEY`).
+Production MUST use a managed KMS; AWS/GCP providers are stubbed (raise
+NotImplemented) until wired.
+
 ## Troubleshooting
 
 Populated as we encounter and document real problems.

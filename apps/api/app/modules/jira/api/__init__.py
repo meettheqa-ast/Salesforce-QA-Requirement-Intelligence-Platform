@@ -12,4 +12,22 @@ Implemented in Sprint 2.
 
 from __future__ import annotations
 
-__all__: list[str] = []
+from app.modules.jira._internal.normalize import normalize_issue
+from app.modules.jira._internal.service import (
+    fetch_stories,
+    sync_repository,
+)
+from app.modules.jira._internal.types import (
+    CanonicalStory,
+    JiraError,
+    JiraIssue,
+)
+
+__all__ = [
+    "CanonicalStory",
+    "JiraError",
+    "JiraIssue",
+    "fetch_stories",
+    "normalize_issue",
+    "sync_repository",
+]

@@ -400,6 +400,48 @@ versions from a re-run. **Confidence:** [Certain] — tested. **Reversible:** Ye
 
 ---
 
+## D-0028 · 2026-06-04 · Jira normalizes to a provider-independent CanonicalStory
+
+**Decision:** Both providers (stub, cloud) return raw `JiraIssue`; `normalize.py`
+flattens them to `CanonicalStory` (handles plain-text AND Atlassian Document
+Format descriptions, best-effort acceptance-criteria extraction). Downstream
+modules never see Jira-specific structure. A malformed issue degrades to an
+empty body rather than failing the whole sync.
+
+**Confidence:** [Certain] for stub + the two description shapes (tested).
+[Guessing] that real Cloud custom-field variety is fully covered — extend as
+real tenants surface edge cases. **Reversible:** Yes.
+
+---
+
+## D-0029 · 2026-06-04 · jira gets credentials only via the connections API
+
+**Decision:** `jira` never opens sealed secrets. For `JIRA_PROVIDER=cloud` it
+calls `connections.get_credentials_for_use(connection_id, purpose="jira_sync")`
+(audited) and passes the plaintext into `JiraCloudProvider` for the lifetime of
+the call. The stub ignores credentials entirely.
+
+**Reasoning:** Preserves the single audited decrypt chokepoint (D-0024).
+**Confidence:** [Certain]. **Reversible:** Low value to.
+
+---
+
+## D-0030 · 2026-06-04 · Sync runs as an arq job that sets its own tenant context
+
+**Decision:** `POST /repositories/{id}/sync` enqueues `sync_repository_job` with
+a fresh idempotency key (so each manual sync = a new version; job retries with
+the same key dedup). The job runs outside an HTTP request, so it calls
+`set_request_context(tenant_id=...)` before delegating to `jira.sync_repository`,
+which then ingests via `repositories.ingest_version`.
+
+**Reasoning:** Sync can be slow/rate-limited; it belongs off the request path on
+the existing arq runtime. The job must re-establish tenant context because RLS
+and `require_tenant_id()` depend on it. **Confidence:** [Certain] for the
+service-level pipeline (e2e tested); the arq dispatch itself is exercised
+manually (needs Redis). **Reversible:** Yes.
+
+---
+
 ## Unresolved working assumptions (carry-over from execution plan)
 
 These are *not* decisions yet. They are flagged risks awaiting user input:
